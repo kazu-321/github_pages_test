@@ -28,13 +28,13 @@ jobs:
         
       - name: Build all branches
         run: |
-          git branch -r | sed 's/^ *//' | grep '^origin/' | while read branch
+          git branch -r \
+            | sed 's/^ *//' \
+            | grep '^origin/' \
+            | grep -v 'HEAD ->' \
+            | while read branch
           do
             branch_name=${branch#origin/}
-
-            if [ "$branch_name" = "HEAD" ]; then
-              continue
-            fi
 
             if [ "$branch_name" = "gh-pages" ]; then
               continue
@@ -43,6 +43,8 @@ jobs:
             echo "Processing $branch_name"
 
             safe_name=$(echo "$branch_name" | tr '/' '-')
+
+            rm -rf /tmp/$safe_name
 
             git worktree add /tmp/$safe_name origin/$branch_name
 
