@@ -25,14 +25,16 @@ jobs:
       - name: Prepare output directory
         run: |
           mkdir public
-
+        
       - name: Build all branches
         run: |
-          branches=$(git for-each-ref --format='%(refname:short)' refs/remotes/origin/)
-
-          for branch in $branches
+          git branch -r | sed 's/^ *//' | grep '^origin/' | while read branch
           do
             branch_name=${branch#origin/}
+
+            if [ "$branch_name" = "HEAD" ]; then
+              continue
+            fi
 
             if [ "$branch_name" = "gh-pages" ]; then
               continue
@@ -40,17 +42,19 @@ jobs:
 
             echo "Processing $branch_name"
 
-            git worktree add /tmp/$branch_name origin/$branch_name
+            safe_name=$(echo "$branch_name" | tr '/' '-')
 
-            mkdir -p public/$branch_name
+            git worktree add /tmp/$safe_name origin/$branch_name
+
+            mkdir -p public/$safe_name
 
             rsync -av \
               --exclude '.git' \
               --exclude '.github' \
-              /tmp/$branch_name/ \
-              public/$branch_name/
+              /tmp/$safe_name/ \
+              public/$safe_name/
 
-            git worktree remove /tmp/$branch_name --force
+            git worktree remove /tmp/$safe_name --force
           done
 
       - name: Generate index.html
